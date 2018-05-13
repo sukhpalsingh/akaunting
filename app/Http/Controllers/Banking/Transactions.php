@@ -10,6 +10,9 @@ use App\Models\Expense\Payment;
 use App\Models\Income\InvoicePayment;
 use App\Models\Income\Revenue;
 use App\Models\Setting\Category;
+use App\Utilities\ImportFile;
+use Carbon\Carbon;
+use Storage;
 
 class Transactions extends Controller
 {
@@ -24,7 +27,23 @@ class Transactions extends Controller
     public function index()
     {
         $request = request();
+
+        $accounts = collect(Account::enabled()->pluck('name', 'id'))
+            ->prepend(trans('general.all_type', ['type' => trans_choice('general.accounts', 2)]), '');
+
+        $types = collect(['expense' => 'Expense', 'income' => 'Income'])
+            ->prepend(trans('general.all_type', ['type' => trans_choice('general.types', 2)]), '');
+            
+        $categories = collect(Category::enabled()->type('income')->pluck('name', 'id'))
+            ->prepend(trans('general.all_type', ['type' => trans_choice('general.categories', 2)]), '');
         
+        $transactions = Transaction::join('accounts','transactions.account_id', 'accounts.id')
+            ->paginate(25);
+        return view('banking.transactions.index', compact('transactions', 'accounts', 'types', 'categories'));
+    }
+
+    public function others()
+    {
         $accounts = collect(Account::enabled()->pluck('name', 'id'))
             ->prepend(trans('general.all_type', ['type' => trans_choice('general.accounts', 2)]), '');
 
@@ -49,6 +68,46 @@ class Transactions extends Controller
         $transactions = $this->getTransactions($request);
 
         return view('banking.transactions.index', compact('transactions', 'accounts', 'types', 'categories'));
+    }
+
+    /**
+     * Import the specified resource.
+     *
+     * @param  ImportFile  $import
+     *
+     * @return Response
+     */
+    public function import()
+    {
+        $request = request();
+
+        if (!$request->hasFile('import')) {
+            flash(trans('messages.error.no_file'))->error();
+
+            redirect()->back()->send();
+        }
+
+        $folder = session('company_id') . '/imports';
+
+        // Upload file
+        $path = Storage::path($request->file('import')->store($folder));
+
+        if (($handle = fopen($path, 'r')) !== false) {
+            if (($header = fgetcsv($handle)) !== FALSE) {
+                while (($data = fgetcsv($handle)) !== FALSE) {
+                    $rowData = [];
+                    foreach ($header as $index => $heading) {
+                        $rowData[$heading] = $data[$index];
+                    }
+
+                    $transactionAt = Carbon::createFromFormat('d F y', $rowData['transaction_at']);
+                    $rowData['transaction_at'] = $transactionAt->format('Y-m-d');
+                    $result = Transaction::create($rowData);
+                }
+            }
+        }
+
+        return redirect('banking/transactions');
     }
 
     /**

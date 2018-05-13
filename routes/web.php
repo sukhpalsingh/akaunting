@@ -88,6 +88,7 @@ Route::group(['middleware' => 'language'], function () {
 
             Route::group(['prefix' => 'banking'], function () {
                 Route::resource('accounts', 'Banking\Accounts');
+                Route::post('transactions/import', 'Banking\Transactions@import');
                 Route::resource('transactions', 'Banking\Transactions');
                 Route::resource('transfers', 'Banking\Transfers');
             });

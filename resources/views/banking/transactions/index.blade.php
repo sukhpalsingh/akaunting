@@ -2,6 +2,13 @@
 
 @section('title', trans_choice('general.transactions', 2))
 
+@permission('create-expenses-payments')
+@section('new_button')
+<span class="new-button"><a href="{{ url('banking/transaction/create') }}" class="btn btn-success btn-sm"><span class="fa fa-plus"></span> &nbsp;{{ trans('general.add_new') }}</a></span>
+<span><a href="{{ url('common/import/banking/transactions') }}" class="btn btn-success btn-sm"><span class="fa fa-download"></span> &nbsp;{{ trans('import.import') }}</a></span>
+@endsection
+@endpermission
+
 @section('content')
 <!-- Default box -->
 <div class="box box-success">
@@ -38,7 +45,7 @@
                 <tbody>
                 @foreach($transactions as $item)
                     <tr>
-                        <td>{{ Date::parse($item->paid_at)->format($date_format) }}</td>
+                        <td>{{ Date::parse($item->transaction_at)->format($date_format) }}</td>
                         <td>{{ $item->account_name }}</td>
                         <td>{{ $item->type }}</td>
                         <td>{{ $item->category_name }}</td>
@@ -53,6 +60,7 @@
     <!-- /.box-body -->
 
     <div class="box-footer">
+        @include('partials.admin.pagination', ['items' => $transactions, 'type' => 'transactions'])
     </div>
     <!-- /.box-footer -->
 </div>

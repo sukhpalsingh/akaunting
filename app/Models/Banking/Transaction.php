@@ -7,9 +7,28 @@ use App\Models\Expense\Payment;
 use App\Models\Income\Invoice;
 use App\Models\Income\Revenue;
 use Illuminate\Database\Eloquent\Model;
+use Sofa\Eloquence\Eloquence;
 
 class Transaction extends Model
 {
+    use Eloquence;
+
+    protected $table = 'transactions';
+
+    /**
+     * Attributes that should be mass-assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'account_id',
+        'transaction_at',
+        'type',
+        'amount',
+        'description',
+        'balance'
+    ];
+
     public static function getUserTransactions($user_id, $type)
     {
         $transactions = array();
